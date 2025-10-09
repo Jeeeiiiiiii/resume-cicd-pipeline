@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         DOCKER_REGISTRY = 'docker.io'
-        DOCKER_USERNAME = 'your-dockerhub-username'  // Replace with your actual username
+        DOCKER_USERNAME = 'jeeeiiiiiii'  // Replace with your actual username
         IMAGE_NAME = "${DOCKER_USERNAME}/aurjei-resume"
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
