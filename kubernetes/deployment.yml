@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resume-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: resume-test
+  template:
+    metadata:
+      labels:
+        app: resume-test
+    spec:
+      containers:
+      - name: resume-test
+        image: 
+        ports:
+        - containerPort: 80
+  
