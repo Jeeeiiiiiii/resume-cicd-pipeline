@@ -1,0 +1,13 @@
+FROM jenkins/jenkins:lts
+USER root
+# Install Docker CLI and kubectl
+RUN apt-get update && \
+    apt-get install -y docker.io curl && \
+    rm -rf /var/lib/apt/lists/*
+# Install kubectl
+RUN curl -LO "https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/kubectl
+# Add jenkins to docker group
+RUN usermod -aG docker jenkins
+USER jenkins
