@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: resume-test
-        image: resume
+        image: jeeeiiiiiii/resume:latest
         ports:
         - containerPort: 80
   
