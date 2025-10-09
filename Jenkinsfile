@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         DOCKER_REGISTRY = 'docker.io'
-        DOCKER_USERNAME = 'jeeeiiiiiii'  // Replace with your actual username
+        DOCKER_USERNAME = 'jeeeiiiiiii'
         IMAGE_NAME = "${DOCKER_USERNAME}/aurjei-resume"
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
@@ -11,7 +11,8 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                // Fix: Point to correct Dockerfile location
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -f docker/Dockerfile ."
                 sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
             }
         }
@@ -25,21 +26,14 @@ pipeline {
         stage('Push to Registry') {
             steps {
                 script {
-                    // Use Jenkins credentials to login
                     withCredentials([usernamePassword(
                         credentialsId: 'dockerhub-credentials',
                         usernameVariable: 'DOCKER_USER',
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
-                        // Login to Docker Hub
                         sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                        
-                        // Push images
                         sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
                         sh "docker push ${IMAGE_NAME}:latest"
-                        
-                        // Logout for security
-                        sh 'docker logout'
                     }
                 }
             }
@@ -47,9 +41,13 @@ pipeline {
         
         stage('Deploy') {
             steps {
-                sh 'kubectl apply -f kubernetes/service.yaml'
-                sh "kubectl set image deployment/resume-deployment resume-container=${IMAGE_NAME}:${IMAGE_TAG}"
-                sh 'kubectl rollout status deployment/resume-deployment --timeout=5m'
+                // Fix: Use kubeconfig credential and correct deployment name
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh 'kubectl apply -f kubernetes/deployment.yaml'
+                    sh 'kubectl apply -f kubernetes/service.yaml'
+                    sh "kubectl set image deployment/resume-test resume-test=${IMAGE_NAME}:${IMAGE_TAG}"
+                    sh 'kubectl rollout status deployment/resume-test --timeout=5m'
+                }
             }
         }
         
@@ -64,10 +62,11 @@ pipeline {
     post {
         failure {
             echo 'Pipeline failed! Rolling back...'
-            sh 'kubectl rollout undo deployment/resume-deployment || true'
+            withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                sh 'kubectl rollout undo deployment/resume-test || true'
+            }
         }
         always {
-            // Ensure logout even if pipeline fails
             sh 'docker logout || true'
         }
     }
