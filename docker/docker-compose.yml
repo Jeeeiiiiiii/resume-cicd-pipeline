@@ -4,6 +4,7 @@ services:
   jenkins:
     image: d-jenkins
     container_name: jenkins
+    network_mode: "host"
     ports:
       - "8080:8080"
       - "50000:50000"
