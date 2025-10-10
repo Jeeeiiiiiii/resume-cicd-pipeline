@@ -11,7 +11,6 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                // Fix: Point to correct Dockerfile location
                 sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -f docker/Dockerfile ."
                 sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
             }
@@ -41,13 +40,11 @@ pipeline {
         
         stage('Deploy') {
             steps {
-                // Fix: Use kubeconfig credential and correct deployment name
-                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
-                    sh 'kubectl apply -f kubernetes/deployment.yaml'
-                    sh 'kubectl apply -f kubernetes/service.yaml'
-                    sh "kubectl set image deployment/resume-test resume-test=${IMAGE_NAME}:${IMAGE_TAG}"
-                    sh 'kubectl rollout status deployment/resume-test --timeout=5m'
-                }
+                // No withCredentials needed - kubeconfig is already mounted
+                sh 'kubectl apply -f kubernetes/deployment.yaml'
+                sh 'kubectl apply -f kubernetes/service.yaml'
+                sh "kubectl set image deployment/resume-test resume-test=${IMAGE_NAME}:${IMAGE_TAG}"
+                sh 'kubectl rollout status deployment/resume-test --timeout=5m'
             }
         }
         
@@ -62,9 +59,8 @@ pipeline {
     post {
         failure {
             echo 'Pipeline failed! Rolling back...'
-            withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
-                sh 'kubectl rollout undo deployment/resume-test || true'
-            }
+            // No withCredentials needed
+            sh 'kubectl rollout undo deployment/resume-test || true'
         }
         always {
             sh 'docker logout || true'
