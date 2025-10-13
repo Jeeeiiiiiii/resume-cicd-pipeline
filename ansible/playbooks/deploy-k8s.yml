@@ -1,0 +1,48 @@
+---
+- name: Deploy Resume App to Kubernetes
+  hosts: local
+  gather_facts: no
+  vars:
+    image_name: "{{ lookup('env', 'IMAGE_NAME') }}"
+    image_tag: "{{ lookup('env', 'IMAGE_TAG') }}"
+    namespace: default
+    deployment_name: resume-test
+    
+  tasks:
+    - name: Apply Kubernetes deployment
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../../kubernetes/deployment.yml"
+        namespace: "{{ namespace }}"
+      
+    - name: Apply Kubernetes service
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/../../kubernetes/service.yml"
+        namespace: "{{ namespace }}"
+    
+    - name: Update deployment image
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ namespace }}"
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: "{{ deployment_name }}"
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: "{{ deployment_name }}"
+                    image: "{{ image_name }}:{{ image_tag }}"
+    
+    - name: Wait for deployment rollout
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        name: "{{ deployment_name }}"
+        namespace: "{{ namespace }}"
+      register: deployment
+      until: deployment.resources[0].status.updatedReplicas == deployment.resources[0].status.replicas
+      retries: 30
+      delay: 10
