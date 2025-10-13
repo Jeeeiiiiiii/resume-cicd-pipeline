@@ -3,8 +3,8 @@
   hosts: local
   gather_facts: no
   vars:
-    image_name: "{{ lookup('env', 'IMAGE_NAME') }}"
-    image_tag: "{{ lookup('env', 'IMAGE_TAG') }}"
+    image_name: "{{ IMAGE_NAME }}"
+    image_tag: "{{ IMAGE_TAG }}"
     namespace: default
     deployment_name: resume-test
     
