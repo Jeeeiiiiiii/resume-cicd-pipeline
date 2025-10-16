@@ -40,11 +40,13 @@ pipeline {
         
         stage('Deploy') {
             steps {
-                // No withCredentials needed - kubeconfig is already mounted
-                sh 'kubectl apply -f kubernetes/deployment.yml'
-                sh 'kubectl apply -f kubernetes/service.yml'
-                sh "kubectl set image deployment/resume-test resume-test=${IMAGE_NAME}:${IMAGE_TAG}"
-                sh 'kubectl rollout status deployment/resume-test --timeout=5m'
+                dir('ansible') {
+                    sh """
+                        ansible-playbook playbooks/deploy-k8s.yml \
+                        -e IMAGE_NAME=${IMAGE_NAME} \
+                        -e IMAGE_TAG=${IMAGE_TAG}
+                    """
+                }
             }
         }
         
